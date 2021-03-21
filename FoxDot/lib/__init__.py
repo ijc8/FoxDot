@@ -1,5 +1,3 @@
-from __future__ import absolute_import, division, print_function
-
 import os.path
 with open((os.path.join(os.path.dirname(__file__), ".version")), "r") as f:
     __version__ = f.readline().strip()
@@ -12,7 +10,7 @@ from .Patterns import *
 from .TimeVar import *
 from .Constants import *
 from .Root import Root
-from .Scale import Scale, Tuning
+from .Scale import Scale, Tuning, get_freq_and_midi
 
 # Define any custom functions
 
