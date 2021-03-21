@@ -47,9 +47,10 @@ def loop_pattern_method(f):
     def new_function(self, *args):
         
         # Return any functions that use TimeVars as PvarGenerators
-        timevars = [arg for arg in args if isinstance(arg, Pattern.TimeVar)]
-        if len(timevars) > 0:
-            return Pattern.TimeVar.CreatePvarGenerator(f, *args, pattern=self)
+        # TODO(FauxDot)
+        # timevars = [arg for arg in args if isinstance(arg, Pattern.TimeVar)]
+        # if len(timevars) > 0:
+        #     return Pattern.TimeVar.CreatePvarGenerator(f, *args, pattern=self)
 
         pat = Pattern()
         # Force pattern types if using lists/tuples
@@ -897,7 +898,7 @@ class metaPattern(object):
     
     def all(self, func=(lambda x: bool(x))):
         """ Returns true if all of the patterns contents satisfies func(x) - default is nonzero """
-        if len(self.data) is 0:
+        if len(self.data) == 0:
             return False
         
         for item in self.data:
@@ -1344,14 +1345,15 @@ class GeneratorPattern:
         if index is None:
             index, self.index = self.index, self.index + 1
         # If we have already accessed by this index, return the value
-        if index in self.cache:
-            return self.cache[index]
-        else:
-            # Calculate new value
-            value = self.func(index)
-            # Store if we refer to the same index
-            self.cache[index] = value
-            return value
+        # CHANGED(ijc): Don't do this, for replayability (PRand is effectful).
+        # if index in self.cache:
+        #     return self.cache[index]
+        # else:
+        # Calculate new value
+        value = self.func(index)
+        # Store if we refer to the same index
+        # self.cache[index] = value
+        return value
 
     @property
     def CACHE_HEAD(self):

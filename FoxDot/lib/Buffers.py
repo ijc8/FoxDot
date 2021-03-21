@@ -21,11 +21,14 @@ from contextlib import closing
 from itertools import chain
 from os.path import abspath, join, isabs, isfile, isdir, splitext
 
-from .Code import WarningMsg
+def WarningMsg(*text):
+    print("Warning: {}".format( " ".join(str(s) for s in text) ))
+
 from .Logging import Timing
-from .SCLang import SampleSynthDef
-from .ServerManager import Server
-from .Settings import FOXDOT_SND, FOXDOT_LOOP
+
+from os.path import realpath
+FOXDOT_SND = os.path.realpath(__file__ + "/../../snd/")
+FOXDOT_LOOP = os.path.realpath(__file__ + "/../../snd/_loop_/")
 
 
 alpha    = "abcdefghijklmnopqrstuvwxyz"
@@ -151,9 +154,8 @@ nil = Buffer('', 0)
 
 
 class BufferManager(object):
-    def __init__(self, server=Server, paths=()):
-        self._server = server
-        self._max_buffers = server.max_buffers
+    def __init__(self, paths=()):
+        self._max_buffers = 128  # TODO: Make a less arbitrary choice here?
         # Keep buffer 0 unallocated because we use it as the "nil" buffer
         self._nextbuf = 1
         self._buffers = [None for _ in range(self._max_buffers)]
@@ -162,6 +164,13 @@ class BufferManager(object):
         self._ext = ['wav', 'wave', 'aif', 'aiff', 'flac']
 
         self.loops = [fn.rsplit(".",1)[0] for fn in os.listdir(FOXDOT_LOOP)]
+
+        # These must be provided by the user to load and free samples.
+        # Signature: buf: Buffer -> void
+        def default(buffer):
+            raise AttributeError("Must set buffer_read and buffer_free.")
+        self.buffer_read = default
+        self.buffer_free = default
 
     def __str__(self):
         return "\n".join(["%r: %s" % (k, v) for k, v in sorted(DESCRIPTIONS.items())])
@@ -214,7 +223,7 @@ class BufferManager(object):
             buf = self._fn_to_buf[filenameOrBuf]
         del self._fn_to_buf[buf.fn]
         self._buffers[buf.bufnum] = None
-        self._server.bufferFree(buf.bufnum)
+        self.buffer_free(buf)
 
     def freeAll(self):
         """ Free all buffers """
@@ -257,14 +266,12 @@ class BufferManager(object):
         if filename not in self._fn_to_buf:
             bufnum = self._getNextBufnum()
             buf = Buffer.fromFile(filename, bufnum)
-            self._server.bufferRead(filename, bufnum)
+            self.buffer_read(buf)
             self._fn_to_buf[filename] = buf
             self._buffers[bufnum] = buf
         elif force:
             buf = self._fn_to_buf[filename]
-            self._server.bufferRead(filename, buf.bufnum)
-            # self._fn_to_buf[filename] = bufnum
-            # self._buffers[bufnum] = buf
+            self.buffer_read(buf)
         return self._fn_to_buf[filename]
 
     def reload(self, filename):
@@ -429,56 +436,3 @@ def hasext(filename):
 
 
 Samples = BufferManager()
-
-
-class LoopSynthDef(SampleSynthDef):
-    def __init__(self):
-        SampleSynthDef.__init__(self, "loop")
-        self.pos = self.new_attr_instance("pos")
-        self.sample = self.new_attr_instance("sample")
-        self.beat_stretch = self.new_attr_instance("beat_stretch")
-        self.defaults['pos']   = 0
-        self.defaults['sample']   = 0
-        self.defaults['beat_stretch'] = 0
-        self.base.append("rate = (rate * (1-(beat_stretch>0))) + ((BufDur.kr(buf) / sus) * (beat_stretch>0));")
-        self.base.append("osc = PlayBuf.ar(2, buf, BufRateScale.kr(buf) * rate, startPos: BufSampleRate.kr(buf) * pos, loop: 1.0);")
-        self.base.append("osc = osc * EnvGen.ar(Env([0,1,1,0],[0.05, sus-0.05, 0.05]));")
-        self.osc = self.osc * self.amp
-        self.add()
-    def __call__(self, filename, pos=0, sample=0, **kwargs):
-        kwargs["buf"] = Samples.loadBuffer(filename, sample)
-        proxy = SampleSynthDef.__call__(self, pos, **kwargs)
-        proxy.kwargs["filename"] = filename
-        return proxy
-
-class StretchSynthDef(SampleSynthDef):
-    def __init__(self):
-        SampleSynthDef.__init__(self, "stretch")
-        self.base.append("osc = Warp1.ar(2, buf, Line.kr(0,1,sus), rate, windowSize: 0.2, overlaps: 4, interp:2);")
-        self.base.append("osc = osc * EnvGen.ar(Env([0,1,1,0],[0.05, sus-0.05, 0.05]));")
-        self.osc = self.osc * self.amp
-        self.add()
-    def __call__(self, filename, pos=0, sample=0, **kwargs):
-        kwargs["buf"] = Samples.loadBuffer(filename, sample)
-        proxy = SampleSynthDef.__call__(self, pos, **kwargs)
-        proxy.kwargs["filename"] = filename
-        return proxy
-
-class GranularSynthDef(SampleSynthDef):
-    def __init__(self):
-        SampleSynthDef.__init__(self, "gsynth")
-        self.pos = self.new_attr_instance("pos")
-        self.sample = self.new_attr_instance("sample")
-        self.defaults['pos']   = 0
-        self.defaults['sample']   = 0
-        self.base.append("osc = PlayBuf.ar(2, buf, BufRateScale.kr(buf) * rate, startPos: BufSampleRate.kr(buf) * pos);")
-        self.base.append("osc = osc * EnvGen.ar(Env([0,1,1,0],[0.05, sus-0.05, 0.05]));")
-        self.osc = self.osc * self.amp
-        self.add()
-    def __call__(self, filename, pos=0, sample=0, **kwargs):
-        kwargs["buf"] = Samples.loadBuffer(filename, sample)
-        return SampleSynthDef.__call__(self, pos, **kwargs)
-
-loop = LoopSynthDef()
-stretch = StretchSynthDef()
-# gsynth = GranularSynthDef()

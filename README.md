@@ -1,3 +1,38 @@
+# FoxDot-Patterns
+
+This library is a small subset of FoxDot which may be useful for other projects that do not use SuperCollider for synthesis.
+
+The main points of interest are FoxDot's Patterns (nested pattern strings like `"x-{o*}[---]"` and P syntax like `P[0,1,[2,3],P*(4,5)]`), Buffers (including FoxDot's sample library and one-character mappings), Scale, and Root.
+Everything pertaining to SuperCollider has been removed; this repository only contains Python.
+
+To use Buffers without SuperCollider, you can set BufferManager.buffer_read and buffer_free to custom callbacks. For example:
+```python
+from FoxDot.lib.Buffers import Samples, nil
+import wave
+
+def my_buffer_read(buffer):
+    print(f"I am loading resources for {buffer.fn}! Incidentally, this is buffer number {buffer.bufnum}.")
+    w = wave.open(buffer.fn)
+    buffer.data = w.readframes(w.getnframes())
+
+def my_buffer_free(buffer):
+    print(f"If I needed to, I could release some resources used by {buffer}!")
+
+Samples.buffer_read = my_buffer_read
+Samples.buffer_free = my_buffer_free
+
+kick_drum = Samples.getBufferFromSymbol('x')
+# kick_drum.data contains the sample data as bytes.
+Samples.freeAll()
+
+# If you're adding an attribute to buffers on load, you might want to add it to `nil` (the empty sample) too:
+nil.data = b''
+```
+
+FoxDot is by [Ryan Kirkbride](https://github.com/Qirky). Like FoxDot, these modifications are licensed under the Creative Commons BY-SA 4.0 (see LICENSE).
+
+The upstream README follows:
+
 FoxDot - Live Coding with Python v0.8
 =====================================
 
