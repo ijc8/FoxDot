@@ -47,7 +47,7 @@ def loop_pattern_method(f):
     def new_function(self, *args):
         
         # Return any functions that use TimeVars as PvarGenerators
-        # TODO(FauxDot)
+        # TODO(FoxDotPatterns)
         # timevars = [arg for arg in args if isinstance(arg, Pattern.TimeVar)]
         # if len(timevars) > 0:
         #     return Pattern.TimeVar.CreatePvarGenerator(f, *args, pattern=self)
@@ -1345,7 +1345,7 @@ class GeneratorPattern:
         if index is None:
             index, self.index = self.index, self.index + 1
         # If we have already accessed by this index, return the value
-        # CHANGED(ijc): Don't do this, for replayability (PRand is effectful).
+        # CHANGED(FoxDotPatterns): Don't do this, for replayability (PRand is effectful).
         # if index in self.cache:
         #     return self.cache[index]
         # else:
