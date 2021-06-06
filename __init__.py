@@ -1,1 +1,1 @@
-from .FoxDot import *
+from .FoxDotPatterns import *
