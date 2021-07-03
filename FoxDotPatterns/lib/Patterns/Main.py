@@ -1345,15 +1345,14 @@ class GeneratorPattern:
         if index is None:
             index, self.index = self.index, self.index + 1
         # If we have already accessed by this index, return the value
-        # CHANGED(FoxDotPatterns): Don't do this, for replayability (PRand is effectful).
-        # if index in self.cache:
-        #     return self.cache[index]
-        # else:
-        # Calculate new value
-        value = self.func(index)
-        # Store if we refer to the same index
-        # self.cache[index] = value
-        return value
+        if index in self.cache:
+            return self.cache[index]
+        else:
+            # Calculate new value
+            value = self.func(index)
+            # Store if we refer to the same index
+            self.cache[index] = value
+            return value
 
     @property
     def CACHE_HEAD(self):
