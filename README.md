@@ -1,4 +1,4 @@
-# FoxDot-Patterns
+# FoxDotPatterns
 
 This library is a small subset of FoxDot which may be useful for other projects that do not use SuperCollider for synthesis.
 
@@ -7,7 +7,7 @@ Everything pertaining to SuperCollider has been removed; this repository only co
 
 To use Buffers without SuperCollider, you can set BufferManager.buffer_read and buffer_free to custom callbacks. For example:
 ```python
-from FoxDot.lib.Buffers import Samples, nil
+from FoxDotPatterns.lib.Buffers import Samples, nil
 import wave
 
 def my_buffer_read(buffer):
