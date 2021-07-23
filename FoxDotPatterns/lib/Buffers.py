@@ -155,7 +155,7 @@ nil = Buffer('', 0)
 
 class BufferManager(object):
     def __init__(self, paths=()):
-        self._max_buffers = 128  # TODO: Make a less arbitrary choice here?
+        self._max_buffers = 512  # TODO: Make a less arbitrary choice here?
         # Keep buffer 0 unallocated because we use it as the "nil" buffer
         self._nextbuf = 1
         self._buffers = [None for _ in range(self._max_buffers)]
